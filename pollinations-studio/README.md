@@ -19,5 +19,5 @@ npm start              # http://localhost:3000
 Set `POLLINATIONS_KEY`, and set `APP_PASSWORD` so strangers can't spend your balance
 (the browser will ask for it; any username works).
 
-- **Render:** New → Blueprint, point it at this repo; `render.yaml` sets up the service.
+- **Render:** open https://render.com/deploy?repo=https://github.com/lhopkins78/claude/tree/claude/charming-ritchie-823d6w (or New → Blueprint on this repo). The root `render.yaml` sets up a free web service and asks for the two variables.
 - **Docker anywhere** (Fly.io, Railway, Cloud Run…): `docker build -t pollinations-studio . && docker run -p 3000:3000 -e POLLINATIONS_KEY=sk_... -e APP_PASSWORD=... pollinations-studio`
