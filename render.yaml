@@ -5,7 +5,7 @@ services:
     plan: free
     rootDir: pollinations-studio
     buildCommand: "true"
-    startCommand: node server.js
+    startCommand: node server.mjs
     envVars:
       - key: POLLINATIONS_KEY
         sync: false

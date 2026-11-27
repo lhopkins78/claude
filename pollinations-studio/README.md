@@ -3,9 +3,10 @@
 A small web app for prompting [Pollinations](https://gen.pollinations.ai/docs) image and video models,
 with uploads for image-to-image and image-to-video.
 
-The Node server holds your `sk_` key and proxies four things: the model list, media uploads
+The API (`lib/api.mjs`) holds your `sk_` key and proxies the model list, media uploads
 (to `media.pollinations.ai`), generation requests (sent as async jobs), and job status and results.
-The key never reaches the browser. There are no npm dependencies; Node 20.12+ is enough.
+The key never reaches the browser. It runs as a Netlify Function (`netlify/functions/api.mjs`)
+or under the plain Node server (`server.mjs`). There are no npm dependencies; Node 20.12+ is enough.
 
 ## Run locally
 
@@ -15,6 +16,12 @@ npm start              # http://localhost:3000
 ```
 
 ## Deploy
+
+**Netlify (current):** project `pollinations-studio`, deployed from this folder (`netlify.toml`).
+Set `POLLINATIONS_KEY` in the project's environment variables. New Netlify projects are private
+(team login), which keeps strangers off your balance; `APP_PASSWORD` is optional there.
+
+Other hosts:
 
 Set `POLLINATIONS_KEY`, and set `APP_PASSWORD` so strangers can't spend your balance
 (the browser will ask for it; any username works).

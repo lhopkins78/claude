@@ -2,10 +2,10 @@
   "name": "pollinations-studio",
   "version": "1.0.0",
   "description": "Prompt Pollinations image and video models, with uploads for image-to-image and image-to-video.",
-  "main": "server.js",
-  "type": "commonjs",
+  "main": "server.mjs",
+  "type": "module",
   "scripts": {
-    "start": "node --env-file-if-exists=.env server.js"
+    "start": "node --env-file-if-exists=.env server.mjs"
   },
   "engines": {
     "node": ">=20.12"

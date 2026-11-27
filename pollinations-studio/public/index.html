@@ -67,9 +67,21 @@
   .spin { width: 28px; height: 28px; border: 3px solid var(--line); border-top-color: var(--accent); border-radius: 50%; animation: s 1s linear infinite; margin: 0 auto 8px; }
   @keyframes s { to { transform: rotate(360deg); } }
   .wait { text-align: center; color: var(--muted); font-size: 13px; }
+  #login { position: fixed; inset: 0; background: var(--bg); display: grid; place-items: center; padding: 16px; z-index: 10; }
+  #login[hidden] { display: none; }
+  #login form { width: 100%; max-width: 340px; }
+  #login .err { padding: 8px 0 0; text-align: left; }
 </style>
 </head>
 <body>
+<div id="login" hidden>
+  <form class="panel">
+    <label for="pw">Password</label>
+    <input id="pw" type="password" autocomplete="current-password" required>
+    <div id="pwerr" class="err"></div>
+    <button class="btn primary">Unlock</button>
+  </form>
+</div>
 <header><h1>Pollinations Studio</h1><span>Images and videos from Pollinations models</span></header>
 <main>
   <section class="panel">
@@ -136,8 +148,36 @@ function el(tag, attrs = {}, ...kids) {
 async function api(url, opts) {
   const r = await fetch(url, opts);
   const j = await r.json().catch(() => ({}));
+  if (r.status === 401) { $("login").hidden = false; $("pw").focus(); }
   if (!r.ok) throw new Error(j.error || `Request failed (${r.status})`);
   return j;
+}
+
+$("login").querySelector("form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  $("pwerr").textContent = "";
+  const r = await fetch("/api/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ password: $("pw").value }) });
+  if (!r.ok) return void ($("pwerr").textContent = "Wrong password");
+  $("login").hidden = true;
+  $("pw").value = "";
+  loadModels();
+});
+
+// Hosting limits request bodies to a few MB, so shrink big images before upload.
+const MAX_BYTES = 4 * 1024 * 1024, MAX_SIDE = 2048;
+async function shrink(blob) {
+  if (blob.type === "image/gif" || blob.type === "image/svg+xml") return blob;
+  let bmp;
+  try { bmp = await createImageBitmap(blob); } catch { return blob; }
+  if (blob.size <= MAX_BYTES && Math.max(bmp.width, bmp.height) <= MAX_SIDE) return blob;
+  const scale = Math.min(1, MAX_SIDE / Math.max(bmp.width, bmp.height));
+  const c = document.createElement("canvas");
+  c.width = Math.round(bmp.width * scale); c.height = Math.round(bmp.height * scale);
+  c.getContext("2d").drawImage(bmp, 0, 0, c.width, c.height);
+  const keepAlpha = blob.type === "image/png" || blob.type === "image/webp";
+  let out = await new Promise((r) => c.toBlob(r, keepAlpha ? "image/webp" : "image/jpeg", 0.92));
+  if (out.size > MAX_BYTES) out = await new Promise((r) => c.toBlob(r, "image/jpeg", 0.8));
+  return out;
 }
 
 // ---------- models ----------
@@ -229,7 +269,8 @@ async function uploadBlob(blob) {
   state.refs.push(ref);
   renderRefs();
   try {
-    const j = await api("/api/upload", { method: "POST", headers: { "Content-Type": blob.type }, body: blob });
+    const small = await shrink(blob);
+    const j = await api("/api/upload", { method: "POST", headers: { "Content-Type": small.type }, body: small });
     ref.url = j.url;
   } catch (e) {
     ref.error = true;
