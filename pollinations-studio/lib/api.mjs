@@ -106,7 +106,7 @@ async function uploadMedia(auth, body, contentType) {
 }
 
 // ---------- generation ----------
-const IMAGE_PARAMS = ["width", "height", "seed", "quality", "resolution"];
+const IMAGE_PARAMS = ["width", "height", "aspectRatio", "seed", "quality", "resolution"];
 const VIDEO_PARAMS = ["width", "height", "seed", "duration", "aspectRatio", "audio", "resolution"];
 
 async function generate(auth, body) {

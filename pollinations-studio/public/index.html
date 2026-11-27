@@ -105,9 +105,16 @@
 
     <div id="opts-image">
       <div class="row">
-        <div><label for="width">Width</label><input id="width" type="number" min="64" max="4096" step="8" value="1024"></div>
-        <div><label for="height">Height</label><input id="height" type="number" min="64" max="4096" step="8" value="1024"></div>
+        <div><label for="iaspect">Aspect ratio</label>
+          <select id="iaspect">
+            <option value="1:1">1:1 square</option><option value="16:9">16:9 wide</option><option value="9:16">9:16 tall</option>
+            <option value="4:3">4:3</option><option value="3:4">3:4</option><option value="3:2">3:2</option><option value="2:3">2:3</option>
+            <option value="21:9">21:9 cinema</option><option value="4:5">4:5 portrait</option>
+          </select></div>
+        <div><label for="isize">Size</label>
+          <select id="isize"><option value="max">Max for model</option><option value="1048576">~1 MP</option><option value="589824">~0.6 MP (fast)</option></select></div>
       </div>
+      <div id="dims" class="modelinfo"></div>
       <label for="quality">Quality <span class="hint">(GPT Image models)</span></label>
       <select id="quality"><option value="">Default</option><option>low</option><option>medium</option><option>high</option><option>hd</option></select>
     </div>
@@ -200,6 +207,44 @@ function renderModels() {
   updateModelInfo();
 }
 
+// Pollinations doesn't publish per-model size limits, and some models reject
+// oversized or oddly sized requests instead of shrinking them. These limits
+// come from the API docs and test requests; everything else gets the common
+// 2.36 MP limit, which models with larger limits simply accept.
+const SIZE_RULES = [
+  [/^black-forest-labs\/flux\.1\.1-pro$/, { maxPixels: 1_600_000, multiple: 32, maxSide: 1440, minSide: 256 }],
+  [/^black-forest-labs\/flux\.1-schnell$/, { maxPixels: 1_048_576 }],
+  [/^microsoft\/mai-image/, { minSide: 768 }],
+  [/^(black-forest-labs\/flux-3-image|qwen\/qwen-image|x-ai\/grok-imagine-image|google\/gemini)/, { maxPixels: 4_194_304 }],
+];
+function sizeRules(id) {
+  const base = { maxPixels: 2_359_296, multiple: 16, maxSide: 4096, minSide: 256 };
+  for (const [re, r] of SIZE_RULES) if (re.test(id)) Object.assign(base, r);
+  return base;
+}
+
+function imageDims(m) {
+  const r = sizeRules(m.id);
+  const [rw, rh] = $("iaspect").value.split(":").map(Number);
+  const budget = $("isize").value === "max" ? r.maxPixels : Math.min(r.maxPixels, Number($("isize").value));
+  const k = r.multiple;
+  let w = Math.sqrt(budget * rw / rh), h = w * rh / rw;
+  const fit = Math.min(1, r.maxSide / Math.max(w, h));
+  w *= fit; h *= fit;
+  const grow = Math.max(1, r.minSide / Math.min(w, h));
+  w *= grow; h *= grow;
+  w = Math.floor(w / k) * k; h = Math.floor(h / k) * k;
+  while (w * h > r.maxPixels) { if (w >= h) w -= k; else h -= k; }
+  return { width: w, height: h };
+}
+
+function updateDims() {
+  const m = currentModel();
+  if (!m || m.kind !== "image") return;
+  const d = imageDims(m);
+  $("dims").textContent = `Requests ${d.width} × ${d.height} (${(d.width * d.height / 1e6).toFixed(1)} MP). Some models round this to their nearest supported size.`;
+}
+
 function updateModelInfo() {
   const m = currentModel();
   const info = $("modelinfo");
@@ -223,6 +268,8 @@ function updateModelInfo() {
     dur.value = d.default ?? dur.min;
     $("durhint").textContent = d.allowed ? `(${d.allowed.join(", ")})` : d.min != null && d.max != null ? (d.min === d.max ? `(${d.min} only)` : `(${d.min}–${d.max})`) : "";
   }
+
+  updateDims();
 
   const resWrap = $("res-wrap"), res = $("resolution");
   res.innerHTML = "";
@@ -313,6 +360,8 @@ for (const b of document.querySelectorAll(".seg button")) {
   });
 }
 $("model").addEventListener("change", updateModelInfo);
+$("iaspect").addEventListener("change", updateDims);
+$("isize").addEventListener("change", updateDims);
 
 // ---------- generate ----------
 function addCard(job) {
@@ -386,7 +435,9 @@ $("go").addEventListener("click", () => {
   const payload = { kind: state.kind, prompt, model: m.id, images, seed: $("seed").value };
   if (m.resolutions.length) payload.resolution = $("resolution").value;
   if (state.kind === "image") {
-    payload.width = $("width").value; payload.height = $("height").value; payload.quality = $("quality").value;
+    const d = imageDims(m);
+    payload.width = d.width; payload.height = d.height; payload.aspectRatio = $("iaspect").value;
+    payload.quality = $("quality").value;
   } else {
     payload.duration = clampDuration(m, Number($("duration").value)); payload.aspectRatio = $("aspect").value;
     payload.audio = $("audio").checked;
