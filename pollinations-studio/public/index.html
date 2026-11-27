@@ -1,0 +1,368 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pollinations Studio</title>
+<style>
+  :root {
+    --bg: #f6f6f4; --panel: #ffffff; --text: #1b1b1a; --muted: #6b6b66; --line: #e2e2dd;
+    --accent: #2f6f4f; --accent-text: #ffffff; --danger: #b3261e; --chip: #eef3ef;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #121312; --panel: #1b1c1b; --text: #ecece8; --muted: #9a9a94; --line: #2c2d2b;
+      --accent: #6fbf93; --accent-text: #0f1a14; --danger: #f2b8b5; --chip: #1f2a23; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  header { padding: 16px; border-bottom: 1px solid var(--line); display: flex; align-items: baseline; gap: 12px; }
+  header h1 { font-size: 18px; margin: 0; }
+  header span { color: var(--muted); font-size: 13px; }
+  main { display: grid; grid-template-columns: 380px 1fr; gap: 16px; padding: 16px; max-width: 1400px; margin: 0 auto; }
+  @media (max-width: 860px) { main { grid-template-columns: 1fr; } }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px; align-self: start; }
+  label { display: block; font-size: 13px; font-weight: 600; margin: 14px 0 6px; }
+  label:first-child { margin-top: 0; }
+  .hint { color: var(--muted); font-size: 12px; font-weight: 400; }
+  select, input, textarea { width: 100%; font: inherit; color: var(--text); background: var(--bg);
+    border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
+  textarea { min-height: 110px; resize: vertical; }
+  .seg { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  .seg button { border: 0; padding: 10px; font: inherit; font-weight: 600; background: transparent; color: var(--muted); cursor: pointer; }
+  .seg button.on { background: var(--accent); color: var(--accent-text); }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .row label { margin-top: 10px; }
+  .check { display: flex; gap: 8px; align-items: center; font-weight: 400; margin-top: 12px; }
+  .check input { width: auto; }
+  .drop { border: 1.5px dashed var(--line); border-radius: 10px; padding: 14px; text-align: center; color: var(--muted);
+    font-size: 13px; cursor: pointer; }
+  .drop.over { border-color: var(--accent); color: var(--text); }
+  .drop.disabled { opacity: .5; cursor: not-allowed; }
+  .refs { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+  .ref { position: relative; width: 76px; }
+  .ref img { width: 76px; height: 76px; object-fit: cover; border-radius: 8px; border: 1px solid var(--line); display: block; }
+  .ref .tag { font-size: 11px; color: var(--muted); text-align: center; }
+  .ref button { position: absolute; top: -6px; right: -6px; width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--line);
+    background: var(--panel); color: var(--text); cursor: pointer; line-height: 1; padding: 0; }
+  .ref.busy img { opacity: .4; }
+  .urlrow { display: flex; gap: 6px; margin-top: 8px; }
+  .urlrow input { flex: 1; }
+  .btn { border: 1px solid var(--line); background: var(--panel); color: var(--text); border-radius: 8px; padding: 8px 12px;
+    font: inherit; font-size: 13px; cursor: pointer; white-space: nowrap; text-decoration: none; display: inline-block; }
+  .btn.primary { width: 100%; margin-top: 16px; padding: 12px; background: var(--accent); color: var(--accent-text); border: 0; font-size: 15px; font-weight: 600; }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+  .modelinfo { font-size: 12px; color: var(--muted); margin-top: 6px; }
+  .chip { display: inline-block; background: var(--chip); border-radius: 999px; padding: 1px 8px; margin: 2px 4px 0 0; font-size: 11px; color: var(--text); }
+  .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; align-content: start; }
+  .empty { color: var(--muted); padding: 40px 16px; text-align: center; grid-column: 1 / -1; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; }
+  .card .media { background: var(--bg); min-height: 200px; display: grid; place-items: center; }
+  .card img, .card video { width: 100%; display: block; }
+  .card .body { padding: 10px 12px; font-size: 13px; }
+  .card .prompt { margin: 0 0 4px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  .card .meta { color: var(--muted); font-size: 12px; }
+  .card .actions { display: flex; gap: 6px; flex-wrap: wrap; padding: 0 12px 12px; }
+  .err { color: var(--danger); padding: 16px; font-size: 13px; text-align: center; }
+  .spin { width: 28px; height: 28px; border: 3px solid var(--line); border-top-color: var(--accent); border-radius: 50%; animation: s 1s linear infinite; margin: 0 auto 8px; }
+  @keyframes s { to { transform: rotate(360deg); } }
+  .wait { text-align: center; color: var(--muted); font-size: 13px; }
+</style>
+</head>
+<body>
+<header><h1>Pollinations Studio</h1><span>Images and videos from Pollinations models</span></header>
+<main>
+  <section class="panel">
+    <div class="seg" role="tablist">
+      <button id="tab-image" class="on" data-kind="image">Image</button>
+      <button id="tab-video" data-kind="video">Video</button>
+    </div>
+
+    <label for="model">Model</label>
+    <select id="model"><option>Loading models…</option></select>
+    <div id="modelinfo" class="modelinfo"></div>
+
+    <label for="prompt">Prompt</label>
+    <textarea id="prompt" placeholder="A paper boat drifting down a rainy street, cinematic light"></textarea>
+
+    <label>Input images <span id="refhint" class="hint"></span></label>
+    <div id="drop" class="drop">Drop images here, paste, or click to upload</div>
+    <input id="file" type="file" accept="image/*" multiple hidden>
+    <div class="urlrow"><input id="refurl" placeholder="…or paste a public image URL"><button id="addurl" class="btn">Add</button></div>
+    <div id="refs" class="refs"></div>
+
+    <div id="opts-image">
+      <div class="row">
+        <div><label for="width">Width</label><input id="width" type="number" min="64" max="4096" step="8" value="1024"></div>
+        <div><label for="height">Height</label><input id="height" type="number" min="64" max="4096" step="8" value="1024"></div>
+      </div>
+      <label for="quality">Quality <span class="hint">(GPT Image models)</span></label>
+      <select id="quality"><option value="">Default</option><option>low</option><option>medium</option><option>high</option><option>hd</option></select>
+    </div>
+
+    <div id="opts-video" hidden>
+      <div class="row">
+        <div><label for="duration">Duration (s) <span id="durhint" class="hint"></span></label><input id="duration" type="number" min="1" max="20" value="4"></div>
+        <div><label for="aspect">Aspect ratio</label>
+          <select id="aspect"><option value="">Default</option><option>16:9</option><option>9:16</option><option>1:1</option><option>4:3</option><option>3:4</option></select></div>
+      </div>
+      <label class="check"><input id="audio" type="checkbox"> Generate audio (where supported)</label>
+    </div>
+
+    <div class="row">
+      <div><label for="seed">Seed <span class="hint">(-1 random)</span></label><input id="seed" type="number" value="-1"></div>
+      <div id="res-wrap" hidden><label for="resolution">Resolution</label><select id="resolution"></select></div>
+    </div>
+
+    <button id="go" class="btn primary">Generate</button>
+  </section>
+
+  <section id="gallery" class="gallery"><div class="empty">Your generations will appear here.</div></section>
+</main>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const state = { kind: "image", models: [], refs: [] }; // refs: {id, url, preview, busy}
+
+function el(tag, attrs = {}, ...kids) {
+  const n = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === "class") n.className = v; else if (k.startsWith("on")) n.addEventListener(k.slice(2), v); else n.setAttribute(k, v);
+  }
+  for (const k of kids) if (k != null) n.append(k);
+  return n;
+}
+
+async function api(url, opts) {
+  const r = await fetch(url, opts);
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(j.error || `Request failed (${r.status})`);
+  return j;
+}
+
+// ---------- models ----------
+function currentModel() { return state.models.find((m) => m.id === $("model").value); }
+
+function renderModels() {
+  const sel = $("model");
+  const prev = sel.value;
+  sel.innerHTML = "";
+  const list = state.models.filter((m) => m.kind === state.kind);
+  const withImg = list.filter((m) => m.acceptsImage), noImg = list.filter((m) => !m.acceptsImage);
+  const label = state.kind === "image" ? "Text + image to image" : "Text + image to video";
+  for (const [name, group] of [[label, withImg], ["Text only", noImg]]) {
+    if (!group.length) continue;
+    const og = el("optgroup", { label: name });
+    for (const m of group) og.append(el("option", { value: m.id }, m.title + (m.paidOnly ? " (paid)" : "")));
+    sel.append(og);
+  }
+  if (list.some((m) => m.id === prev)) sel.value = prev;
+  updateModelInfo();
+}
+
+function updateModelInfo() {
+  const m = currentModel();
+  const info = $("modelinfo");
+  info.innerHTML = "";
+  if (!m) return;
+  info.append(el("div", {}, m.id));
+  if (m.description) info.append(el("div", {}, m.description));
+  if (m.acceptsImage) info.append(el("span", { class: "chip" }, `up to ${m.maxReferenceImages || 1} input image${(m.maxReferenceImages || 1) > 1 ? "s" : ""}`));
+  for (const c of m.videoCapabilities) info.append(el("span", { class: "chip" }, c.replace(/_/g, " ")));
+
+  const drop = $("drop");
+  drop.classList.toggle("disabled", !m.acceptsImage);
+  $("refhint").textContent = !m.acceptsImage ? "(this model is text-only)"
+    : state.kind === "video" ? (m.videoCapabilities.includes("end_frame") ? "(1st = start frame, 2nd = end frame)" : "(start frame)")
+    : "(for editing or style reference)";
+
+  const d = m.durations, dur = $("duration");
+  if (d) {
+    dur.min = d.allowed ? Math.min(...d.allowed) : (d.min ?? 1);
+    dur.max = d.allowed ? Math.max(...d.allowed) : (d.max ?? 20);
+    dur.value = d.default ?? dur.min;
+    $("durhint").textContent = d.allowed ? `(${d.allowed.join(", ")})` : d.min != null && d.max != null ? (d.min === d.max ? `(${d.min} only)` : `(${d.min}–${d.max})`) : "";
+  }
+
+  const resWrap = $("res-wrap"), res = $("resolution");
+  res.innerHTML = "";
+  resWrap.hidden = !m.resolutions.length;
+  for (const r of m.resolutions) res.append(el("option", { value: r }, r));
+  renderRefs();
+}
+
+async function loadModels() {
+  try {
+    state.models = await api("/api/models");
+    renderModels();
+  } catch (e) {
+    $("model").innerHTML = "";
+    $("modelinfo").append(el("div", { class: "err" }, "Could not load models: " + e.message));
+  }
+}
+
+// ---------- reference images ----------
+function maxRefs() {
+  const m = currentModel();
+  if (!m || !m.acceptsImage) return 0;
+  if (state.kind === "video") return m.videoCapabilities.includes("end_frame") ? 2 : 1;
+  return Math.max(1, m.maxReferenceImages || 1);
+}
+
+function renderRefs() {
+  const box = $("refs");
+  box.innerHTML = "";
+  const limit = maxRefs();
+  state.refs.forEach((r, i) => {
+    const tag = state.kind === "video" ? (i === 0 ? "start" : i === 1 ? "end" : "unused")
+      : i < limit ? "" : "unused";
+    box.append(el("div", { class: "ref" + (r.busy ? " busy" : "") },
+      el("img", { src: r.preview, alt: "input image" }),
+      el("button", { title: "Remove", onclick: () => { state.refs = state.refs.filter((x) => x !== r); renderRefs(); } }, "×"),
+      el("div", { class: "tag" }, r.busy ? "uploading…" : r.error ? "failed" : (i >= limit ? "unused" : tag))));
+  });
+}
+
+async function uploadBlob(blob) {
+  if (!blob.type.startsWith("image/")) return alert("Only image files can be used as input.");
+  const ref = { preview: URL.createObjectURL(blob), busy: true };
+  state.refs.push(ref);
+  renderRefs();
+  try {
+    const j = await api("/api/upload", { method: "POST", headers: { "Content-Type": blob.type }, body: blob });
+    ref.url = j.url;
+  } catch (e) {
+    ref.error = true;
+    alert("Upload failed: " + e.message);
+    state.refs = state.refs.filter((x) => x !== ref);
+  }
+  ref.busy = false;
+  renderRefs();
+}
+
+const drop = $("drop");
+drop.addEventListener("click", () => { if (maxRefs()) $("file").click(); });
+$("file").addEventListener("change", (e) => { [...e.target.files].forEach(uploadBlob); e.target.value = ""; });
+drop.addEventListener("dragover", (e) => { e.preventDefault(); if (maxRefs()) drop.classList.add("over"); });
+drop.addEventListener("dragleave", () => drop.classList.remove("over"));
+drop.addEventListener("drop", (e) => {
+  e.preventDefault(); drop.classList.remove("over");
+  if (maxRefs()) [...e.dataTransfer.files].forEach(uploadBlob);
+});
+document.addEventListener("paste", (e) => {
+  if (!maxRefs()) return;
+  for (const item of e.clipboardData.items) if (item.type.startsWith("image/")) uploadBlob(item.getAsFile());
+});
+$("addurl").addEventListener("click", () => {
+  const u = $("refurl").value.trim();
+  if (!/^https:\/\//.test(u)) return alert("Enter a public https:// image URL.");
+  state.refs.push({ url: u, preview: u });
+  $("refurl").value = "";
+  renderRefs();
+});
+
+// ---------- mode ----------
+for (const b of document.querySelectorAll(".seg button")) {
+  b.addEventListener("click", () => {
+    state.kind = b.dataset.kind;
+    document.querySelectorAll(".seg button").forEach((x) => x.classList.toggle("on", x === b));
+    $("opts-image").hidden = state.kind !== "image";
+    $("opts-video").hidden = state.kind !== "video";
+    renderModels();
+  });
+}
+$("model").addEventListener("change", updateModelInfo);
+
+// ---------- generate ----------
+function addCard(job) {
+  const g = $("gallery");
+  g.querySelector(".empty")?.remove();
+  const media = el("div", { class: "media" }, el("div", { class: "wait" }, el("div", { class: "spin" }), el("span", {}, "Starting…")));
+  const actions = el("div", { class: "actions" });
+  const card = el("article", { class: "card" }, media,
+    el("div", { class: "body" }, el("p", { class: "prompt" }, job.prompt),
+      el("div", { class: "meta" }, `${job.kind} · ${job.model}${job.images.length ? ` · ${job.images.length} input image${job.images.length > 1 ? "s" : ""}` : ""}`)),
+    actions);
+  g.prepend(card);
+  return { media, actions };
+}
+
+function showResult(view, job, url, contentType) {
+  view.media.innerHTML = "";
+  const isVideo = (contentType || "").startsWith("video/") || job.kind === "video";
+  view.media.append(isVideo
+    ? el("video", { src: url, controls: "", loop: "", playsinline: "" })
+    : el("img", { src: url, alt: job.prompt }));
+  const ext = isVideo ? "mp4" : ((contentType || "").split("/")[1] || "jpg").replace("jpeg", "jpg").replace("svg+xml", "svg");
+  view.actions.append(el("a", { class: "btn", href: url, download: `pollinations-${Date.now()}.${ext}` }, "Download"));
+  if (!isVideo) {
+    view.actions.append(el("button", { class: "btn", onclick: async (e) => {
+      e.target.disabled = true;
+      try { await uploadBlob(await (await fetch(url)).blob()); } finally { e.target.disabled = false; }
+    } }, "Use as input"));
+  }
+  view.actions.append(el("button", { class: "btn", onclick: () => { $("prompt").value = job.prompt; $("prompt").focus(); } }, "Reuse prompt"));
+}
+
+function showError(view, msg) {
+  view.media.innerHTML = "";
+  view.media.append(el("div", { class: "err" }, msg));
+}
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+async function run(job) {
+  const view = addCard(job);
+  const started = Date.now();
+  const label = () => view.media.querySelector(".wait span");
+  const tick = setInterval(() => { const l = label(); if (l) l.textContent = `Generating… ${Math.round((Date.now() - started) / 1000)}s`; }, 1000);
+  try {
+    let r = await api("/api/generate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(job.payload) });
+    if (r.resultUrl) return showResult(view, job, r.resultUrl, r.contentType);
+    const id = r.jobId;
+    for (;;) {
+      await sleep(5000);
+      const s = await api(`/api/jobs/${encodeURIComponent(id)}`);
+      if (s.status === "succeeded") return showResult(view, job, `/api/jobs/${encodeURIComponent(id)}/result`, s.content_type || s.contentType);
+      if (s.status === "failed" || s.status === "error" || s.status === "canceled") {
+        return showError(view, typeof s.error === "string" ? s.error : "Generation failed");
+      }
+    }
+  } catch (e) {
+    showError(view, e.message);
+  } finally {
+    clearInterval(tick);
+  }
+}
+
+$("go").addEventListener("click", () => {
+  const prompt = $("prompt").value.trim();
+  if (!prompt) return $("prompt").focus();
+  const m = currentModel();
+  if (!m) return alert("Pick a model first.");
+  if (state.refs.some((r) => r.busy)) return alert("Wait for uploads to finish.");
+  const images = state.refs.filter((r) => r.url).slice(0, maxRefs()).map((r) => r.url);
+  const payload = { kind: state.kind, prompt, model: m.id, images, seed: $("seed").value };
+  if (m.resolutions.length) payload.resolution = $("resolution").value;
+  if (state.kind === "image") {
+    payload.width = $("width").value; payload.height = $("height").value; payload.quality = $("quality").value;
+  } else {
+    payload.duration = clampDuration(m, Number($("duration").value)); payload.aspectRatio = $("aspect").value;
+    payload.audio = $("audio").checked;
+  }
+  run({ kind: state.kind, prompt, model: m.title, images, payload });
+});
+function clampDuration(m, v) {
+  const d = m.durations;
+  if (!d || !Number.isFinite(v)) return d?.default ?? "";
+  if (d.allowed?.length) return d.allowed.reduce((a, b) => (Math.abs(b - v) < Math.abs(a - v) ? b : a));
+  if (d.min != null) v = Math.max(d.min, v);
+  if (d.max != null) v = Math.min(d.max, v);
+  return v;
+}
+$("prompt").addEventListener("keydown", (e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) $("go").click(); });
+
+loadModels();
+</script>
+</body>
+</html>

@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: pollinations-studio
+    runtime: node
+    rootDir: pollinations-studio
+    buildCommand: "true"
+    startCommand: node server.js
+    envVars:
+      - key: POLLINATIONS_KEY
+        sync: false
+      - key: APP_PASSWORD
+        sync: false

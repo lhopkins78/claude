@@ -84,7 +84,7 @@ Always confirm with the user before:
 
 ## Notes for AI Assistants
 
-- This repository is in early initialization — no source code or project structure exists yet
+- `pollinations-studio/` is a dependency-free Node web app (server.js + public/index.html) for Pollinations image/video generation. Its secret key comes from `POLLINATIONS_KEY` (local `.env`, gitignored) and must never be committed
 - When the project stack and conventions are established, update this file to reflect them
 - Update this file whenever significant new conventions, tooling, or structure is added
 - Focus on what is actually present in the codebase, not hypothetical future structure
